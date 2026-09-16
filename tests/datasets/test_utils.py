@@ -687,6 +687,11 @@ class TestFindFiles:
         """A path that does not exist resolves to nothing."""
         assert find_files(os.path.join(self.vector_dir, 'non_existing')) == []
 
+    @pytest.mark.parametrize('path', ['gs://bucket/data.zarr', 'tests/data/data.zarr/'])
+    def test_opaque(self, path: str) -> None:
+        """A URL or Zarr store resolves to itself without being listed."""
+        assert find_files(path) == [path]
+
     @pytest.mark.parametrize('temp_archive', [vector_dir], indirect=True)
     def test_archive_file(self, temp_archive: tuple[str, str]) -> None:
         """A file inside an archive resolves to itself."""

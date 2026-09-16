@@ -1043,6 +1043,8 @@ def find_files(path: Path, filename_glob: str = '*') -> list[str]:
 
     .. versionadded:: 0.10
     """
+    if '://' in str(path) or str(path).rstrip('/').endswith('.zarr'):
+        return [str(path)]
     files: set[str] = set()
     if os.path.isdir(path):
         pathname = os.path.join(path, '**', filename_glob)
