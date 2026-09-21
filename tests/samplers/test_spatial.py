@@ -95,6 +95,16 @@ class TestGriddedPatchSampler:
         sampler = GriddedPatchSampler(dataset, size=10, units=Units.CRS)
         assert len(sampler) == 100
 
+    @pytest.mark.parametrize('stride', [5, 2.5, 1])
+    def test_roi_smaller_than_patch(self, dataset: GeoDataset, stride: float) -> None:
+        # A 6x6 ROI inside a 10x10 patch is covered by one patch, whatever the stride
+        roi = shapely.box(0, 0, 6, 6)
+        sampler = GriddedPatchSampler(dataset, size=5, stride=stride, roi=roi)
+        assert len(sampler) == 1
+        x, y = next(iter(sampler))
+        assert x.start <= 0 and x.stop >= 6
+        assert y.start <= 0 and y.stop >= 6
+
     @pytest.mark.slow
     @pytest.mark.parametrize('num_workers', [0, 1, 2])
     def test_dataloader(

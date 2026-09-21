@@ -149,10 +149,13 @@ def convolution_arithmetic[T: (float, Timedelta)](
     because we want to include the final remaining window in each input when
     *input_size* is not an integer multiple of *stride*.
 
+    If the input is smaller than a single window, one window is returned regardless
+    of *stride*, since that window already covers the whole input.
+
     Args:
         input_size: Size of the input window.
         kernel_size: Size of each output window.
-        stride: Stride with which to sample (defaults to *input_size*).
+        stride: Stride with which to sample (defaults to *kernel_size*).
 
     Returns:
         The number of output windows that can be sampled.
@@ -160,7 +163,7 @@ def convolution_arithmetic[T: (float, Timedelta)](
     .. versionadded:: 0.10
     """
     stride = stride or kernel_size
-    return math.ceil((input_size - kernel_size) / stride) + 1
+    return max(math.ceil((input_size - kernel_size) / stride) + 1, 1)
 
 
 def prism(x: NDArray, y: NDArray, z: NDArray) -> list[NDArray]:

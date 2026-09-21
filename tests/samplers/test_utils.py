@@ -94,6 +94,11 @@ def test_tile_to_chips(
         # s > k
         (10, 2, 3, 4),
         (Timedelta(seconds=10), Timedelta(seconds=2), Timedelta(seconds=3), 4),
+        # i < k: a single window covers the whole input, whatever the stride
+        (6, 10, 10, 1),
+        (6, 10, 5, 1),
+        (6, 10, 1, 1),
+        (Timedelta(days=6), Timedelta(days=10), Timedelta(days=1), 1),
     ],
 )
 def test_convolution_arithmetic[T: (float, Timedelta)](
