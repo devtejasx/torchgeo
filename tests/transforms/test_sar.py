@@ -74,6 +74,19 @@ class TestLeeFilterFunction:
         out = lee_filter(x, window_size=5)
         assert out.shape == x.shape
 
+    @pytest.mark.parametrize('shape', [(3, 3), (1, 1), (1, 16), (16, 2)])
+    def test_image_smaller_than_window(self, shape: tuple[int, int]) -> None:
+        # Reflect padding by window_size // 2 = 3 needs at least 4 pixels
+        x = torch.rand(1, 2, *shape)
+        out = lee_filter(x, window_size=7)
+        assert out.shape == x.shape
+        assert torch.isfinite(out).all()
+
+    def test_constant_image_smaller_than_window(self) -> None:
+        x = torch.full((1, 1, 2, 2), 5.0)
+        out = lee_filter(x, window_size=7)
+        torch.testing.assert_close(out, x)
+
     def test_non_negative_output(self) -> None:
         x = torch.rand(1, 1, 16, 16) * 10
         out = lee_filter(x, window_size=7)

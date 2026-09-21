@@ -20,7 +20,10 @@ def _box_filter(x: Tensor, window_size: int) -> Tensor:
         Smoothed tensor of identical shape.
     """
     pad = window_size // 2
-    x_padded = F.pad(x, (pad, pad, pad, pad), mode='reflect')
+    # Reflect padding needs the pad to be smaller than the image; fall back to
+    # replicating the edge for images smaller than half the window.
+    mode = 'reflect' if pad < min(x.shape[-2:]) else 'replicate'
+    x_padded = F.pad(x, (pad, pad, pad, pad), mode=mode)
     kernel = torch.ones(
         1, 1, window_size, window_size, device=x.device, dtype=x.dtype
     ) / float(window_size * window_size)
