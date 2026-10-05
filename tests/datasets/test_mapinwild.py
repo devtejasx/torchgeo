@@ -69,7 +69,11 @@ class TestMapInWild:
         root = tmp_path
         for zipfile in pathname_glob:
             shutil.copy(zipfile, root)
-        MapInWild(root, download=False, checksum=False)
+        ds = MapInWild(root, download=False, checksum=False)
+        # s2_summer comes in two parts: tile 1 is in part 1, tile 2 in part 2
+        for tile in [1, 2]:
+            ds.ids = [tile]
+            assert ds[0]['image'].ndim == 3
 
     def test_corrupted(self, tmp_path: Path) -> None:
         pathname = os.path.join('tests', 'data', 'mapinwild', '**', '*.zip')
