@@ -235,8 +235,10 @@ def random_grid_cell_assignment(
     indexes_sr = pd.IntervalIndex.from_arrays(
         left, right, closed='both', name='datetime'
     )
-    rows_df = pd.DataFrame(rows)
-    geometry_sr = pd.Series(geometry)
+    # Keep the column names so the new indexes can still be queried by name
+    geometry_col = dataset.index.geometry.name
+    rows_df = pd.DataFrame(rows).set_axis(indexes_sr)
+    rows_df[geometry_col] = geometry
 
     # Randomly assign cells to each new index
     indices = randperm(len(rows), generator=generator)
@@ -245,9 +247,8 @@ def random_grid_cell_assignment(
     for offset, length in zip(itertools.accumulate(lengths), lengths):
         ds = deepcopy(dataset)
         ds.index = GeoDataFrame(
-            data=rows_df.iloc[indices[offset - length : offset].tolist()].values,
-            index=indexes_sr[indices[offset - length : offset].tolist()],
-            geometry=geometry_sr[indices[offset - length : offset].tolist()].values,
+            rows_df.iloc[indices[offset - length : offset].tolist()],
+            geometry=geometry_col,
             crs=dataset.crs,
         )
         new_datasets.append(ds)

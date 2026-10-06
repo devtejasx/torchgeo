@@ -225,6 +225,22 @@ def test_random_grid_cell_assignment_partial_cells() -> None:
     assert isclose(total_area(train_ds | val_ds | test_ds), total_area(ds))
 
 
+def test_random_grid_cell_assignment_keeps_columns() -> None:
+    geometry = [shapely.box(0, 0, 2, 2), shapely.box(10, 0, 12, 2)]
+    ds = CustomGeoDataset(geometry=geometry)
+    ds.index.insert(0, 'filepath', ['left.tif', 'right.tif'])
+
+    splits = random_grid_cell_assignment(ds, fractions=[1 / 2, 1 / 2], grid_size=2)
+
+    for split in splits:
+        assert list(split.index.columns) == ['filepath', 'geometry']
+        assert split.index.geometry.name == 'geometry'
+        assert split.index.index.name == 'datetime'
+        # Every cell keeps the attributes of the object it was cut from
+        for filepath, geom in zip(split.index.filepath, split.index.geometry):
+            assert filepath == ('left.tif' if geom.bounds[0] < 5 else 'right.tif')
+
+
 def test_roi_split() -> None:
     geometry = [
         shapely.box(0, 0, 1, 1),
