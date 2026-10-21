@@ -1,0 +1,54 @@
+name: assign
+on:
+  issues:
+    types:
+      - labeled
+      - typed
+  workflow_dispatch:
+defaults:
+  run:
+    shell: bash
+jobs:
+  codeowners:
+    name: codeowners
+    permissions:
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v7.0.1
+        with:
+          sparse-checkout: .github/CODEOWNERS
+          sparse-checkout-cone-mode: false
+      - name: Assign bugs to the code owners of their components
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          # A component label (datasets, models, ...) names the directory its
+          # owners are listed under in CODEOWNERS. Only unassigned bugs are
+          # assigned. A manual run goes through all of them once.
+          if [[ -n "$ISSUE" ]]; then
+            issues=$ISSUE
+          else
+            issues=$(gh api --paginate -X GET search/issues \
+              -f q="repo:$GITHUB_REPOSITORY is:issue is:open type:Bug no:assignee" \
+              --jq '.items[].number')
+          fi
+          for issue in $issues; do
+            IFS=$'\t' read -r type assignees labels < <(
+              gh api "repos/$GITHUB_REPOSITORY/issues/$issue" \
+                --jq '[.type.name // "", (.assignees | length), ([.labels[].name] | join(" "))] | @tsv'
+            )
+            if [[ "$type" != Bug || "$assignees" != 0 ]]; then
+              continue
+            fi
+            owners=$(for label in $labels; do
+              awk -v dir="$label/" '$1 == dir { for (i = 2; i <= NF; i++) print substr($i, 2) }' .github/CODEOWNERS
+            done | sort -u)
+            if [[ -n "$owners" ]]; then
+              echo "#$issue: $(echo $owners)"
+              gh issue edit "$issue" --repo "$GITHUB_REPOSITORY" $(printf -- '--add-assignee %s ' $owners)
+            fi
+          done
