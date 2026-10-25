@@ -257,8 +257,13 @@ class DIOR(NonGeoDataset):
         """
         parsed = parse_pascal_voc(path)
         boxes = torch.tensor(parsed['bboxes'], dtype=torch.float32)
+        # Annotations spell some classes differently, e.g.
+        # 'Expressway-Service-area' for 'expresswayservicearea'
         labels = torch.tensor(
-            [self.class_to_idx[label] for label in parsed['labels']]
+            [
+                self.class_to_idx[label.lower().replace('-', '')]
+                for label in parsed['labels']
+            ]
         ).long()
         return boxes, labels
 
@@ -348,8 +353,9 @@ class DIOR(NonGeoDataset):
             a matplotlib Figure with the rendered sample
         """
         image = sample['image'].permute((1, 2, 0)).numpy()
-        boxes = sample['bbox_xyxy'].numpy()
-        labels = sample['label'].numpy()
+        # Test samples have no annotations
+        boxes = sample.get('bbox_xyxy', torch.empty(0, 4)).numpy()
+        labels = sample.get('label', torch.empty(0, dtype=torch.long)).numpy()
 
         fig, axs = plt.subplots(ncols=1, figsize=(10, 10))
 

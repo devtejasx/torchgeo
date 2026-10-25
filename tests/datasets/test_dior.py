@@ -81,7 +81,20 @@ class TestDIOR:
             DIOR(tmp_path)
 
     def test_plot(self, dataset: DIOR) -> None:
-        if dataset.split != 'test':
-            x = dataset[0].copy()
-            dataset.plot(x, suptitle='Test')
-            plt.close()
+        x = dataset[0].copy()
+        dataset.plot(x, suptitle='Test')
+        plt.close()
+
+    def test_annotation_class_spelling(self, dataset: DIOR, tmp_path: Path) -> None:
+        path = tmp_path / 'annotation.xml'
+        objects = ''.join(
+            f'<object><name>{name}</name><bndbox><xmin>0</xmin><ymin>0</ymin>'
+            '<xmax>1</xmax><ymax>1</ymax></bndbox></object>'
+            for name in ('Expressway-Service-area', 'Expressway-toll-station')
+        )
+        path.write_text(f'<annotation><filename>a.jpg</filename>{objects}</annotation>')
+        _, labels = dataset._load_target(path)
+        assert [dataset.classes[i] for i in labels] == [
+            'expresswayservicearea',
+            'expresswaytollstation',
+        ]
